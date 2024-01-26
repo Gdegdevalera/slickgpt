@@ -11,14 +11,14 @@
 
 	let title = $chatStore[slug].title;
 
-	$: showAiSuggestOptions = $settingsStore.openAiApiKey && canSuggestTitle($chatStore[slug]);
+	$: showAiSuggestOptions = $settingsStore.apiUrl && canSuggestTitle($chatStore[slug]);
 
 	async function handleSuggestTitle() {
-		if (!$settingsStore.openAiApiKey) {
+		if (!$settingsStore.apiUrl) {
 			return;
 		}
 		isLoading = true;
-		title = await suggestChatTitle($chatStore[slug], $settingsStore.openAiApiKey);
+		title = await suggestChatTitle($chatStore[slug], $settingsStore.apiUrl);
 		isLoading = false;
 		track('suggestTitleManually');
 	}

@@ -4,7 +4,7 @@ import type {
 	ChatCompletionCreateParamsStreaming
 } from 'openai/resources/chat';
 import type { RequestHandler } from './$types';
-import type { OpenAiSettings } from '$misc/openai';
+import type { AiSettings } from '$misc/janai';
 import { error } from '@sveltejs/kit';
 import { getErrorMessage, throwIfUnset } from '$misc/error';
 
@@ -21,15 +21,18 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
 		const messages: ChatCompletionMessageParam[] = requestData.messages;
 		throwIfUnset('messages', messages);
 
-		const settings: OpenAiSettings = requestData.settings;
+		const settings: AiSettings = requestData.settings;
 		throwIfUnset('settings', settings);
 
-		const openAiKey: string = requestData.openAiKey;
-		throwIfUnset('OpenAI API key', openAiKey);
+		//const openAiKey: string = requestData.openAiKey;
+		//throwIfUnset('OpenAI API key', openAiKey);
+		
+		const apiBaseUrl: string = requestData.apiUrl;
+		throwIfUnset('AI API URL', apiBaseUrl);
 
 		const completionOpts: ChatCompletionCreateParamsStreaming = {
-			...settings,
 			messages,
+			...settings,
 			stream: true
 		};
 
@@ -40,11 +43,12 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
 		// 	settings.model === OpenAiModel.Gpt35Turbo
 		// 		? 'https://api.openai.com/v1/chat/completions'
 		// 		: 'https://api.openai.com/v1/completions';
-		const apiUrl = 'https://api.openai.com/v1/chat/completions';
 
-		const response = await fetch(apiUrl, {
+		const requestUrl = apiBaseUrl.replace('localhost', '127.0.0.1') + '/v1/chat/completions';
+
+		const response = await fetch(requestUrl, {
 			headers: {
-				Authorization: `Bearer ${openAiKey}`,
+				//Authorization: `Bearer ${openAiKey}`,
 				'Content-Type': 'application/json'
 			},
 			method: 'POST',

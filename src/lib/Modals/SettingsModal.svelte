@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { Accordion, AccordionItem, getModalStore } from '@skeletonlabs/skeleton';
+	import { Accordion, AccordionItem, getModalStore, getToastStore } from '@skeletonlabs/skeleton';
 	import { chatStore, settingsStore } from '$misc/stores';
-	import { models, OpenAiModel } from '$misc/openai';
-	import { track } from '$misc/shared';
+	import { showToast, track } from '$misc/shared';
+	import type { AiModelSettings, JanAiModel } from '$misc/janai';
 
 	const modalStore = getModalStore();
+	const toastStore = getToastStore();
 
 	let slug: string = $modalStore[0].meta?.slug || '';
 	let title = $chatStore[slug].title;
@@ -29,27 +30,38 @@
 		modalStore.close();
 	}
 
+	async function handleLoadModels() {
+		const response = await fetch('/api/models', {
+			method: 'POST',
+			body: JSON.stringify({
+				apiUrl: $settingsStore.apiUrl
+			})
+		});
+
+		if (!response.ok) {
+			showToast(toastStore, 'An error occured.', 'error');
+			return;
+		}
+
+		const janAiModels: JanAiModel[] = await response.json();
+		
+		console.log({janAiModels});
+
+		$settingsStore.models = janAiModels?.reduce((acc, x) => {
+			acc[x.id] = x.parameters;
+			return acc;
+		}, {} as {[key: string]: AiModelSettings});
+	}
+
 	function clamp(value: number, min: number, max: number) {
 		return Math.max(min, Math.min(value, max));
 	}
 
-	function maskString(input: string, maxTotalLength = 20, visibleChars = 4) {
-		if (!input || input.length < maxTotalLength) {
-			return input;
-		}
-
-		const maskedLength = maxTotalLength - visibleChars;
-		const visiblePart = input.slice(-visibleChars);
-		const maskedPart = Array(maskedLength).fill('x').join('');
-
-		return maskedPart + visiblePart;
-	}
-
 	let maxTokensForModel = 0;
-	let editApiKey = false;
 
+	$: models = $settingsStore.models;
 	$: {
-		maxTokensForModel = models[$chatStore[slug].settings.model].maxTokens;
+		maxTokensForModel = ($settingsStore.models ?? {})[$chatStore[slug].settings.model]?.max_tokens ?? 0;
 		settings.max_tokens = clamp(settings.max_tokens, 0, maxTokensForModel);
 	}
 </script>
@@ -58,40 +70,30 @@
 	<form>
 		<h3 class="h3 mb-4">Settings</h3>
 		<div class="flex-row space-y-6">
-			<!-- API key -->
-			{#if editApiKey || !$settingsStore.openAiApiKey}
-				<label class="label">
-					<div class="flex justify-between space-x-12">
-						<span>OpenAI API key</span>
-						<a target="_blank" rel="noreferrer" href="https://platform.openai.com/account/api-keys">
-							Get yours
-						</a>
-					</div>
-					<input
-						required
-						class="input"
-						class:input-error={!$settingsStore.openAiApiKey}
-						type="text"
-						bind:value={$settingsStore.openAiApiKey}
-						on:blur={() => (editApiKey = false)}
-					/>
-				</label>
-			{:else}
-				<div class="flex flex-col space-x-2">
-					<span class="label">OpenAI API key</span>
-
-					<div class="flex justify-between items-center space-x-4">
-						<span>{maskString($settingsStore.openAiApiKey)}</span>
-
-						<button class="btn btn-sm variant-ghost-secondary" on:click={() => (editApiKey = true)}>
-							Edit
-						</button>
-					</div>
+			<!-- API url -->
+			<label class="label">
+				<div class="flex justify-between space-x-12">
+					<span>AI API URL</span>
 				</div>
-			{/if}
+				<input
+					required
+					class="input"
+					class:input-error={!$settingsStore.apiUrl}
+					type="text"
+					bind:value={$settingsStore.apiUrl}
+				/>
+			</label>
+
+			<button class="btn variant-filled-primary" on:click={handleLoadModels}>
+				{#if models}
+					Reload Models List
+				{:else}
+					Load Models List
+				{/if}
+			</button>
 
 			<!-- Model -->
-			{#if $settingsStore.openAiApiKey}
+			{#if models && $settingsStore.apiUrl}
 				<div class="flex flex-col space-y-2">
 					<label class="label">
 						<div class="flex justify-between space-x-12">
@@ -106,7 +108,7 @@
 							</a>
 						</div>
 						<select class="select" bind:value={settings.model}>
-							{#each Object.values(OpenAiModel) as model}
+							{#each Object.keys(models) as model}
 								<option value={model}>{model}</option>
 							{/each}
 						</select>

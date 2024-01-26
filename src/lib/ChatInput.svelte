@@ -93,7 +93,7 @@
 					}) as ChatCompletionMessageParam
 			),
 			settings: chat.settings,
-			openAiKey: $settingsStore.openAiApiKey
+			apiUrl: $settingsStore.apiUrl
 		};
 
 		$eventSourceStore.start(payload, handleAnswer, handleError, handleAbort);
@@ -208,7 +208,7 @@
 
 	export async function editMessage(message: ChatMessage) {
 		originalMessage = message;
-		input = message.content;
+		input = message.content ?? '';
 		isEditMode = true;
 
 		// tick is required for the action to resize the textarea

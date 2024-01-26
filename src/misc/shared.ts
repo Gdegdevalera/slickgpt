@@ -1,10 +1,9 @@
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { get } from 'svelte/store';
-import { defaultOpenAiSettings, OpenAiModel, type OpenAiSettings } from './openai';
 import type { ModalSettings, ToastSettings, ToastStore, ModalStore } from '@skeletonlabs/skeleton';
 import { generateSlug } from 'random-word-slugs';
 import vercelAnalytics from '@vercel/analytics';
-
+import type { AiModelSettings, AiSettings } from './janai';
 import { goto } from '$app/navigation';
 import { chatStore, settingsStore } from './stores';
 import { PUBLIC_DISABLE_TRACKING } from '$env/static/public';
@@ -18,7 +17,7 @@ export interface ChatMessage extends ChatCompletionMessageParam {
 
 export interface Chat {
 	title: string;
-	settings: OpenAiSettings;
+	settings: AiSettings & {model: string};
 	contextMessage: ChatCompletionMessageParam;
 	messages: ChatMessage[];
 	created: Date;
@@ -28,10 +27,11 @@ export interface Chat {
 }
 
 export interface ClientSettings {
-	openAiApiKey?: string;
+	apiUrl?: string;
 	hideLanguageHint?: boolean;
 	useTitleSuggestions?: boolean;
-	defaultModel?: OpenAiModel;
+	defaultModel?: string;
+	models?: {[key: string]: AiModelSettings}
 }
 
 export interface ChatCost {
@@ -47,14 +47,19 @@ export interface ChatCost {
 export function createNewChat(template?: {
 	context?: string | null;
 	title?: string;
-	settings?: OpenAiSettings;
+	settings?: AiSettings;
 	messages?: ChatCompletionMessageParam[];
 }) {
-	const settings = { ...(template?.settings || defaultOpenAiSettings) };
-	const { defaultModel } = get(settingsStore);
-	if (defaultModel) {
-		settings.model = defaultModel;
-	}
+	const { defaultModel, models } = get(settingsStore);
+	const defaultModelSettings = (models ?? {})[defaultModel || ''];
+
+	const settings = { ...(template?.settings || {
+			model: defaultModel ?? 'gpt-3.5-turbo',
+			max_tokens: defaultModelSettings?.max_tokens ?? 2048,
+			temperature: defaultModelSettings?.temperature ?? 1,
+			top_p: defaultModelSettings?.top_p ?? 1
+		}) 
+	};
 
 	const slug = generateSlug();
 	const chat: Chat = {
@@ -77,7 +82,7 @@ export function canSuggestTitle(chat: Chat) {
 	return chat.contextMessage?.content || chat.messages?.length > 0;
 }
 
-export async function suggestChatTitle(chat: Chat, openAiApiKey: string): Promise<string> {
+export async function suggestChatTitle(chat: Chat, apiUrl: string): Promise<string> {
 	if (!canSuggestTitle(chat)) {
 		return Promise.resolve(chat.title);
 	}
@@ -102,7 +107,8 @@ export async function suggestChatTitle(chat: Chat, openAiApiKey: string): Promis
 		method: 'POST',
 		body: JSON.stringify({
 			messages: filteredMessages,
-			openAiKey: openAiApiKey
+			settings: chat.settings,
+			apiUrl
 		})
 	});
 	const { title }: { title: string } = await response.json();

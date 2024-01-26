@@ -13,23 +13,8 @@ export enum OpenAiModel {
 	Gpt35Turbo = 'gpt-3.5-turbo',
 	Gpt4 = 'gpt-4',
 	Gpt432k = 'gpt-4-32k',
-	Gpt41106preview = 'gpt-4-1106-preview'
+	Gpt41106preview = 'gpt-4-1106-preview',
 }
-
-export interface OpenAiSettings {
-	model: OpenAiModel;
-	max_tokens: number; // just for completions
-	temperature: number; // 0-2
-	top_p: number; // 0-1
-	stop?: string | string[]; // max 4 entries in array
-}
-
-export const defaultOpenAiSettings: OpenAiSettings = {
-	model: OpenAiModel.Gpt35Turbo,
-	max_tokens: 2048,
-	temperature: 1,
-	top_p: 1
-};
 
 export interface OpenAiModelStats {
 	maxTokens: number; // total length (prompts + completion)
@@ -38,7 +23,7 @@ export interface OpenAiModelStats {
 	costCompletion: number;
 }
 
-export const models: { [key in OpenAiModel]: OpenAiModelStats } = {
+export const models: { [key: string]: OpenAiModelStats } = {
 	'gpt-3.5-turbo': {
 		maxTokens: 4096,
 		costPrompt: 0.002,
@@ -102,11 +87,24 @@ export function estimateChatCost(chat: Chat): ChatCost {
 
 	// see https://platform.openai.com/docs/guides/chat/introduction > Deep Dive Expander
 	const tokensTotal = tokensPrompt + tokensCompletion + 2; // every reply is primed with <im_start>assistant
+	const model = models[chat.settings.model];
+	if (!model) {
+		return {
+			tokensPrompt,
+			tokensCompletion,
+			tokensTotal: tokensTotal,
+			costPrompt: 0,
+			costCompletion: 0,
+			costTotal: 0,
+			maxTokensForModel: chat.settings.max_tokens
+		};
+	}
+
 	const {
 		maxTokens,
 		costPrompt: costPromptPer1k,
 		costCompletion: costCompletionPer1k
-	} = models[chat.settings.model];
+	} = model;
 	const costPrompt = (costPromptPer1k / 1000.0) * tokensPrompt;
 	const costCompletion = (costCompletionPer1k / 1000.0) * tokensCompletion;
 

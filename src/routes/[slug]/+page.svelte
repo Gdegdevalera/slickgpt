@@ -104,8 +104,8 @@
 
 		// has no title
 		if ($settingsStore.useTitleSuggestions) {
-			if ($settingsStore.openAiApiKey) {
-				const title = await suggestChatTitle(chat, $settingsStore.openAiApiKey);
+			if ($settingsStore.apiUrl) {
+				const title = await suggestChatTitle(chat, $settingsStore.apiUrl);
 				chatStore.updateChat(slug, { title });
 				showToast(toastStore, `Chat title set to: '${title}'`, 'secondary');
 			}
@@ -149,7 +149,7 @@
 				>
 					<Cog6Tooth class="w-6 h-6" />
 				</button>
-				{#if !$settingsStore.openAiApiKey}
+				{#if !$settingsStore.apiUrl}
 					<span class="relative flex h-3 w-3">
 						<span
 							style="left: -10px;"
@@ -166,7 +166,7 @@
 			<!-- Share -->
 			<span
 				class="relative inline-flex"
-				style={!$settingsStore.openAiApiKey ? 'margin-left: -4px;' : ''}
+				style={!$settingsStore.apiUrl ? 'margin-left: -4px;' : ''}
 			>
 				<button
 					disabled={!chat.contextMessage.content?.length && !chat.messages?.length}
