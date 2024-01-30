@@ -92,8 +92,7 @@
 						name: m.name
 					}) as ChatCompletionMessageParam
 			),
-			settings: chat.settings,
-			apiUrl: $settingsStore.apiUrl
+			settings: chat.settings
 		};
 
 		$eventSourceStore.start(payload, handleAnswer, handleError, handleAbort);

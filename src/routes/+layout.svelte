@@ -1,7 +1,7 @@
 <script lang="ts">
 	import 'highlightjs-copy/dist/highlightjs-copy.min.css';
 	import '../app.postcss';
-	import { inject } from '@vercel/analytics';
+	// import { inject } from '@vercel/analytics';
 
 	import { dev } from '$app/environment';
 	import {
@@ -28,7 +28,7 @@
 	import SuggestTitleModal from '$lib/Modals/SuggestTitleModal.svelte';
 	import { initializeStores } from '@skeletonlabs/skeleton';
 
-	inject({ mode: dev ? 'development' : 'production' });
+	// inject({ mode: dev ? 'development' : 'production' });
 
 	hljs.addPlugin(new CopyButtonPlugin());
 

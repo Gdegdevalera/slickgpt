@@ -52,7 +52,7 @@
 			{#if $isLoadingAnswerStore}
 				<div class="place-self-start">
 					<div class="p-5 rounded-2xl variant-ghost-tertiary rounded-tl-none">
-						{@html snarkdown($enhancedLiveAnswerStore.content)}
+						{@html snarkdown($enhancedLiveAnswerStore.content ?? '')}
 					</div>
 				</div>
 			{/if}

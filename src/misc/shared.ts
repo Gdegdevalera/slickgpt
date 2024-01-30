@@ -2,11 +2,10 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { get } from 'svelte/store';
 import type { ModalSettings, ToastSettings, ToastStore, ModalStore } from '@skeletonlabs/skeleton';
 import { generateSlug } from 'random-word-slugs';
-import vercelAnalytics from '@vercel/analytics';
 import type { AiModelSettings, AiSettings } from './janai';
 import { goto } from '$app/navigation';
 import { chatStore, settingsStore } from './stores';
-import { PUBLIC_DISABLE_TRACKING } from '$env/static/public';
+// import { PUBLIC_DISABLE_TRACKING } from '$env/static/public';
 
 export interface ChatMessage extends ChatCompletionMessageParam {
 	id?: string;
@@ -17,7 +16,7 @@ export interface ChatMessage extends ChatCompletionMessageParam {
 
 export interface Chat {
 	title: string;
-	settings: AiSettings & {model: string};
+	settings: AiSettings & { model: string };
 	contextMessage: ChatCompletionMessageParam;
 	messages: ChatMessage[];
 	created: Date;
@@ -27,11 +26,10 @@ export interface Chat {
 }
 
 export interface ClientSettings {
-	apiUrl?: string;
 	hideLanguageHint?: boolean;
 	useTitleSuggestions?: boolean;
 	defaultModel?: string;
-	models?: {[key: string]: AiModelSettings}
+	models?: { [key: string]: AiModelSettings }
 }
 
 export interface ChatCost {
@@ -53,12 +51,13 @@ export function createNewChat(template?: {
 	const { defaultModel, models } = get(settingsStore);
 	const defaultModelSettings = (models ?? {})[defaultModel || ''];
 
-	const settings = { ...(template?.settings || {
+	const settings = {
+		...(template?.settings || {
 			model: defaultModel ?? 'gpt-3.5-turbo',
 			max_tokens: defaultModelSettings?.max_tokens ?? 2048,
 			temperature: defaultModelSettings?.temperature ?? 1,
 			top_p: defaultModelSettings?.top_p ?? 1
-		}) 
+		})
 	};
 
 	const slug = generateSlug();
@@ -82,7 +81,7 @@ export function canSuggestTitle(chat: Chat) {
 	return chat.contextMessage?.content || chat.messages?.length > 0;
 }
 
-export async function suggestChatTitle(chat: Chat, apiUrl: string): Promise<string> {
+export async function suggestChatTitle(chat: Chat): Promise<string> {
 	if (!canSuggestTitle(chat)) {
 		return Promise.resolve(chat.title);
 	}
@@ -91,8 +90,8 @@ export async function suggestChatTitle(chat: Chat, apiUrl: string): Promise<stri
 		chat.messages.length === 1
 			? chatStore.getCurrentMessageBranch(chat)
 			: chat.contextMessage?.content
-			? [chat.contextMessage, ...chat.messages]
-			: chat.messages;
+				? [chat.contextMessage, ...chat.messages]
+				: chat.messages;
 
 	const filteredMessages = messages?.slice(0, chat.contextMessage?.content ? 3 : 2).map(
 		(m) =>
@@ -107,8 +106,7 @@ export async function suggestChatTitle(chat: Chat, apiUrl: string): Promise<stri
 		method: 'POST',
 		body: JSON.stringify({
 			messages: filteredMessages,
-			settings: chat.settings,
-			apiUrl
+			settings: chat.settings
 		})
 	});
 	const { title }: { title: string } = await response.json();
@@ -132,10 +130,10 @@ export function showModalComponent(
 }
 
 export function track(action: string) {
-	if (PUBLIC_DISABLE_TRACKING === 'true') {
-		return;
-	}
-	vercelAnalytics.track(action);
+	// if (PUBLIC_DISABLE_TRACKING === 'true') {
+	// 	return;
+	// }
+	// vercelAnalytics.track(action);
 }
 
 export function showToast(

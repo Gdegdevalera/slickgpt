@@ -1,4 +1,3 @@
-import type { Config } from '@sveltejs/adapter-vercel';
 import type {
 	ChatCompletionMessageParam,
 	ChatCompletionCreateParamsStreaming
@@ -7,11 +6,7 @@ import type { RequestHandler } from './$types';
 import type { AiSettings } from '$misc/janai';
 import { error } from '@sveltejs/kit';
 import { getErrorMessage, throwIfUnset } from '$misc/error';
-
-// this tells Vercel to run this function as https://vercel.com/docs/concepts/functions/edge-functions
-export const config: Config = {
-	runtime: 'edge'
-};
+import { normalized } from '../shared';
 
 export const POST: RequestHandler = async ({ request, fetch }) => {
 	try {
@@ -26,9 +21,6 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
 
 		//const openAiKey: string = requestData.openAiKey;
 		//throwIfUnset('OpenAI API key', openAiKey);
-		
-		const apiBaseUrl: string = requestData.apiUrl;
-		throwIfUnset('AI API URL', apiBaseUrl);
 
 		const completionOpts: ChatCompletionCreateParamsStreaming = {
 			messages,
@@ -44,7 +36,10 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
 		// 		? 'https://api.openai.com/v1/chat/completions'
 		// 		: 'https://api.openai.com/v1/completions';
 
-		const requestUrl = apiBaseUrl.replace('localhost', '127.0.0.1') + '/v1/chat/completions';
+		const apiBaseUrl: string = process.env['APIURL'] ?? '';
+		throwIfUnset('AI API URL', apiBaseUrl);
+
+		const requestUrl = normalized(apiBaseUrl) + 'v1/chat/completions';
 
 		const response = await fetch(requestUrl, {
 			headers: {

@@ -104,11 +104,9 @@
 
 		// has no title
 		if ($settingsStore.useTitleSuggestions) {
-			if ($settingsStore.apiUrl) {
-				const title = await suggestChatTitle(chat, $settingsStore.apiUrl);
-				chatStore.updateChat(slug, { title });
-				showToast(toastStore, `Chat title set to: '${title}'`, 'secondary');
-			}
+			const title = await suggestChatTitle(chat);
+			chatStore.updateChat(slug, { title });
+			showToast(toastStore, `Chat title set to: '${title}'`, 'secondary');
 			goto('/');
 		} else {
 			showModalComponent(modalStore, 'SuggestTitleModal', { slug }, () => {
@@ -149,22 +147,10 @@
 				>
 					<Cog6Tooth class="w-6 h-6" />
 				</button>
-				{#if !$settingsStore.apiUrl}
-					<span class="relative flex h-3 w-3">
-						<span
-							style="left: -10px;"
-							class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error-400 opacity-75"
-						/>
-						<span
-							style="left: -10px;"
-							class="relative inline-flex rounded-full h-3 w-3 bg-error-500"
-						/>
-					</span>
-				{/if}
 			</span>
 
 			<!-- Share -->
-			<span
+			<!-- <span
 				class="relative inline-flex"
 				style={!$settingsStore.apiUrl ? 'margin-left: -4px;' : ''}
 			>
@@ -187,7 +173,7 @@
 						/>
 					</span>
 				{/if}
-			</span>
+			</span> -->
 		</svelte:fragment>
 	</Toolbar>
 

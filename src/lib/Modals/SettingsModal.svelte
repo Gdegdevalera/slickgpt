@@ -30,29 +30,6 @@
 		modalStore.close();
 	}
 
-	async function handleLoadModels() {
-		const response = await fetch('/api/models', {
-			method: 'POST',
-			body: JSON.stringify({
-				apiUrl: $settingsStore.apiUrl
-			})
-		});
-
-		if (!response.ok) {
-			showToast(toastStore, 'An error occured.', 'error');
-			return;
-		}
-
-		const janAiModels: JanAiModel[] = await response.json();
-		
-		console.log({janAiModels});
-
-		$settingsStore.models = janAiModels?.reduce((acc, x) => {
-			acc[x.id] = x.parameters;
-			return acc;
-		}, {} as {[key: string]: AiModelSettings});
-	}
-
 	function clamp(value: number, min: number, max: number) {
 		return Math.max(min, Math.min(value, max));
 	}
@@ -61,7 +38,8 @@
 
 	$: models = $settingsStore.models;
 	$: {
-		maxTokensForModel = ($settingsStore.models ?? {})[$chatStore[slug].settings.model]?.max_tokens ?? 0;
+		maxTokensForModel =
+			($settingsStore.models ?? {})[$chatStore[slug].settings.model]?.max_tokens ?? 0;
 		settings.max_tokens = clamp(settings.max_tokens, 0, maxTokensForModel);
 	}
 </script>
@@ -70,30 +48,8 @@
 	<form>
 		<h3 class="h3 mb-4">Settings</h3>
 		<div class="flex-row space-y-6">
-			<!-- API url -->
-			<label class="label">
-				<div class="flex justify-between space-x-12">
-					<span>AI API URL</span>
-				</div>
-				<input
-					required
-					class="input"
-					class:input-error={!$settingsStore.apiUrl}
-					type="text"
-					bind:value={$settingsStore.apiUrl}
-				/>
-			</label>
-
-			<button class="btn variant-filled-primary" on:click={handleLoadModels}>
-				{#if models}
-					Reload Models List
-				{:else}
-					Load Models List
-				{/if}
-			</button>
-
 			<!-- Model -->
-			{#if models && $settingsStore.apiUrl}
+			{#if models}
 				<div class="flex flex-col space-y-2">
 					<label class="label">
 						<div class="flex justify-between space-x-12">
@@ -155,16 +111,18 @@
 						</svelte:fragment>
 					</AccordionItem>
 				</Accordion>
-			{/if}
-
-			<!-- Buttons -->
-			<div class="flex justify-between">
-				<div class="flex space-x-2">
-					<button class="btn btn-sm" on:click={handleCloseSettings}>Close</button>
-					<button class="btn btn-sm" on:click={handleResetSettings}>Reset</button>
+				<!-- Buttons -->
+				<div class="flex justify-between">
+					<div class="flex space-x-2">
+						<button class="btn btn-sm" on:click={handleCloseSettings}>Close</button>
+						<button class="btn btn-sm" on:click={handleResetSettings}>Reset</button>
+					</div>
+					<button class="btn variant-filled-primary" on:click={handleChangeSettings}>Save</button>
 				</div>
-				<button class="btn variant-filled-primary" on:click={handleChangeSettings}>Save</button>
-			</div>
+			{:else}
+				<div class="label text-red-500">The Models are not loaded</div>
+				<button class="btn btn-sm" on:click={handleCloseSettings}>Close</button>
+			{/if}
 		</div>
 	</form>
 </div>

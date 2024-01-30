@@ -16,7 +16,8 @@
 	} from '@inqling/svelte-icons/heroicon-24-outline';
 	import { goto } from '$app/navigation';
 	import { createNewChat, showToast } from '$misc/shared';
-	import { chatStore, isTimeagoInitializedStore } from '$misc/stores';
+	import { chatStore, isTimeagoInitializedStore, settingsStore } from '$misc/stores';
+	import type { AiModelSettings, JanAiModel } from '$misc/janai';
 
 	const modalStore = getModalStore();
 	const toastStore = getToastStore();
@@ -34,7 +35,35 @@
 			$isTimeagoInitializedStore = true;
 		}
 		timeAgo = new TimeAgo('en-US');
+
+		loadModels().catch(() => {
+			showToast(
+				toastStore,
+				'Models could not be loaded. Check API URL environment variable',
+				'error'
+			);
+		});
 	});
+
+	async function loadModels() {
+		const response = await fetch('/api/models', {
+			method: 'GET'
+		});
+
+		if (!response.ok) {
+			throw new Error();
+		}
+
+		const janAiModels: JanAiModel[] = await response.json();
+
+		$settingsStore.models = janAiModels?.reduce(
+			(acc, x) => {
+				acc[x.id] = x.parameters;
+				return acc;
+			},
+			{} as { [key: string]: AiModelSettings }
+		);
+	}
 
 	async function modalConfirmDelete() {
 		const modal: ModalSettings = {
