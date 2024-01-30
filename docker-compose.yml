@@ -1,0 +1,10 @@
+version: "3.3"
+services:
+  slickgpt:
+    image: docker.io/gdevalera/slickgpt-for-janai:latest
+    build: .
+    ports:
+      - "3000:3000"
+    command: node ./build
+    environment:
+      - APIURL=http://host.docker.internal:1337
